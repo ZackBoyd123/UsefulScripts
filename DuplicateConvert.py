@@ -5,43 +5,63 @@ import copy
 import argparse
 import math
 from scipy import stats
-parser = argparse.ArgumentParser(description="I need -1, -2 and --sample")
-parser.add_argument("--first",help="First input file",required=True)
-parser.add_argument("--second",help= "Second input file", required=True)
-parser.add_argument("--sample",help="Unique sample name i.e Tag1",required=True)
-args = parser.parse_args()
-file1 = args.first
-file2 = args.second
-sample = args.sample
+# parser = argparse.ArgumentParser(description="I need -1, -2 and --sample")
+# parser.add_argument("--first",help="First input file",required=True)
+# parser.add_argument("--second",help= "Second input file", required=True)
+# parser.add_argument("--sample",help="Unique sample name i.e Tag1",required=True)
+# args = parser.parse_args()
+file1 = "tag1-1_SNPs.txt"
+file2 = "tag1-2_SNPs.txt"
+sample = "Tag_1"
 sys.stdout = open(sample+"_output.txt", "w")
+def chunks(l,n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 def read_file(filename):
     position_list = []
     allele_list = []
+    base_list = []
     with open(filename) as file:
         data = csv.reader(file, delimiter="\t")
         next(data, None)
         for line in data:
             position_list.append(line[1])
             allele_list.append(line[7])
+            base_list.append(line[3:5])
         file.close()
 
     position_list = [i.replace(" ","")for i in position_list]
     updated_allele_list = []
+    base_list = [item for sublist in base_list for item in sublist]
+    base_list = [i.replace(" ","") for i in base_list]
+    bases = chunks(base_list,2)
+    bases = [":".join(i) for i in bases]
+    # print(bases)
+
     for i in allele_list:
         i = i.split(";")[1].strip("AF=")
         updated_allele_list.append(i)
     updated_allele_list = [float(i) for i in updated_allele_list]
     #updated_allele_list = [math.log10(i) for i in updated_allele_list]
     #updated_allele_list = [i ** 2 for i in updated_allele_list]
-    return position_list, updated_allele_list
+    return position_list, updated_allele_list, bases
 
 
 print("Location"+","+"Allele_Frequency_Sample_1"+","+"Allele_Frequency_Sample_2"+","+"Description"+","+"Sample")
-location_file_one = read_file(file1)[0]
-af_file_one = read_file(file1)[1]
-location_file_two = read_file(file2)[0]
-af_file_two = read_file(file2)[1]
+mutation_1 = read_file(file1)[2]
+pos_1 = read_file(file1)[0]
+location_file_one = []
+for a, b in zip(pos_1,mutation_1):
+    location_file_one.append(a+":"+b)
 
+mutation_2 = read_file(file2)[2]
+pos_2 = read_file(file2)[0]
+location_file_two = []
+for a, b in zip(pos_2, mutation_2):
+    location_file_two.append(a+":"+b)
+
+af_file_one = read_file(file1)[1]
+af_file_two = read_file(file2)[1]
 
 dictionary_file1 = dict(zip(location_file_one,af_file_one))
 dictionary_file2 = dict(zip(location_file_two,af_file_two))
